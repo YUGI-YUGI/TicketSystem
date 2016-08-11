@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Ticket Home</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/angularjs-toaster/1.1.0/toaster.min.css" rel="stylesheet" />
+  
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angularjs-toaster/1.1.0/toaster.min.js"></script>
+
+
+  <style>
+    /* Remove the navbar's default margin-bottom and rounded borders */
+    .navbar {
+      margin-bottom: 0;
+      border-radius: 0;
+    }
+    
+    /* Set height of the grid so .sidenav can be 100% (adjust as needed) */
+    .row.content {height: 450px}
+    
+    /* Set gray background color and 100% height */
+    .sidenav {
+      padding-top: 20px;
+      background-color: #f1f1f1;
+      height: 100%;
+    }
+    
+    /* Set black background color, white text and some padding */
+    footer {
+      background-color: #555;
+      color: white;
+      padding: 15px;
+    }
+    
+    /* On small screens, set height to 'auto' for sidenav and grid */
+    @media screen and (max-width: 767px) {
+      .sidenav {
+        height: auto;
+        padding: 15px;
+      }
+      .row.content {height:auto;}
+    }
+  </style>
+
+
+
+
+<script type="text/javascript">
+  
+var app = angular.module("ticketHome", ['toaster']); 
+
+
+app.controller("ticCtrl", function($scope,$http,toaster) {
+
+	
+
+	
+
+
+ 
+	
+
+
+
+$http.get('/getdata').then(function(response){
+if(response.data){
+ $scope.listOfTicket=response.data.tics;
+ $scope.listOfUser=response.data.users;
+}
+console.log(response);
+},function(response){
+  console.log(response);
+});
+	
+  $scope.openModel=function(id){
+     $scope.newTicket={
+  "assignTO":"",
+  "status":"new",
+  "desprtion":"",
+  "name":"",
+  "email":""
+  }
+    $(id).modal('show')  
+  };
+
+$scope.createNewTicket=function(ticket,id){
+
+
+if(ticket.desprtion.trim().length =0 ){
+
+  toaster.pop('error', "alert", "desprtion should not be empty");
+  return false;
+}
+
+if(ticket.email.trim().length =0 ){
+ 
+  toaster.pop('error', "alert", "email should not be empty");
+  return false;
+}
+if(ticket.name.trim().length =0 ){
+  
+  toaster.pop('error', "alert", "name should not be empty");
+  return false;
+}
+ var str = $.param( ticket );
+  $http({
+    method: 'POST',
+    url: '/saveTicket?'+str,
+}).then(function(response){
+if(response.data && response.data.id){
+if(!$scope.listOfTicket){
+$scope.listOfTicket=[];
+}
+
+$scope.listOfTicket.push(response.data);
+
+
+  toaster.pop('success', "alert", "ticket created. ticket id"+response.data.id);
+
+}
+}, function(errorCallback){
+    toaster.pop('error', "alert", "ticket not created.please try later");
+  console.log(errorCallback)
+});
+
+//$http.post('/saveTicket', ticket,).then();
+  $(id).modal('hide') 
+
+};
+
+
+$scope.upDateAssign=function(ticket){
+
+var str = $.param( {tid:ticket.id,assignTo:ticket.assignTO.id} );
+
+ $http({
+    method: 'GET',
+    url: "/updatetick/assign?"+str,
+}).then(function(response){
+toaster.pop('success', "alert", "ticket updated.");
+},function(){
+toaster.pop('error', "alert", "ticket not updated.please try later");
+});
+
+}
+
+
+$scope.upDateStatus=function(ticket){
+  var str = $.param( {tid:ticket.id,status:ticket.status} );
+ $http({
+    method: 'GET',
+    url: "/updatetick/status?"+str,
+}).then(function(response){
+toaster.pop('success', "alert", "ticket updated. ");
+},function(){
+toaster.pop('error', "alert", "ticket not updated.please try later");
+});
+
+}
+
+$scope.deleteTick=function(ticket){
+
+ // var str = $.param( ticket );
+  $http({
+    method: 'GET',
+    url: '/deleteticket/'+ticket.id,
+}).then(function(response){
+toaster.pop('success', "alert", "ticket deleted. ticket id");
+},function(){
+toaster.pop('error', "alert", "ticket not updated.please try later");
+});
+
+}
+
+
+
+$scope.openUserModel=function(id){
+
+$scope.user={name:""};
+$(id).modal('show') ; 
+}
+
+$scope.createUser=function(user,id){
+if(!user.name){
+toaster.pop('error', "alert", "user name not empty");
+return false;
+}
+
+
+var str = $.param( user );
+  $http({
+    method: 'GET',
+    url: '/adduser?'+str,
+}).then(function(response){
+
+if(response.data && response.data.id){
+if(!$scope.listOfUser){
+$scope.listOfUser=[];
+}
+
+$scope.listOfUser.push(response.data);
+toaster.pop('success', "alert", "user created ");
+
+}
+}, function(errorCallback){
+   toaster.pop('success', "alert", "user not created .please try later");
+  console.log(errorCallback)
+});
+
+ $(id).modal('hide') 
+};
+
+
+
+$scope.openTicket=function(tick,id){
+ $scope.selectedtic=tick;
+$(id).modal('show') ;
+}
+
+
+ 
+$scope.addComment=function(ticket){
+
+if(!ticket.comment) ticket.comment=[];
+
+if(!ticket.newComment) return false;
+
+var obj={
+  comment:ticket.newComment,
+  tid:ticket.id
+}
+ticket.newComment="";
+var str = $.param( obj );
+  $http({
+    method: 'GET',
+    url: '/addComment?'+str,
+}).then(function(response){
+
+if(response.data && response.data.id){
+if(!$scope.selectedtic.comments){
+$scope.selectedtic.comments=[];
+}
+
+$scope.selectedtic.comments.push(response.data);
+
+
+toaster.pop('success', "alert", "comment added ");
+
+}
+}, function(errorCallback){
+   toaster.pop('error', "alert", "error while comment add ");
+  console.log(errorCallback)
+});
+
+
+};
+
+
+
+});
+
+
+
+</script>
+
+</head>
+<body ng-app="ticketHome" ng-controller="ticCtrl" >
+
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">Logo</a>
+    </div>
+    <div class="collapse navbar-collapse" id="myNavbar">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="#">Home</a></li>
+      
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="logout"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+  
+  <!-- toaster directive -->
+  <toaster-container toaster-options="{'position-class': 'toast-top-right', 'close-button':true}"></toaster-container>
+  <!-- / toaster directive -->
+    
+               
+<div class="container-fluid text-center">
+  <div class="row content">
+    <div class="col-sm-2 sidenav">
+      <p><a href="#" ng-click="openModel('#createTicket')" >create Ticket</a></p>
+      <p><a href="#" ng-click="openUserModel('#createUser')">create User</a></p>
+      
+    </div>
+    <div class="col-sm-8 text-left">
+      <h1>Ticket Table</h1>
+     <table class="table table-striped">
+      <thead> <tr> <th>id</th> <th>Ticket Desc</th> <th>Status</th> <th>CurrentAssign</th> <th>Date</th> <th>view</th></tr> </thead> 
+      <tbody> 
+      <tr ng-repeat="row in listOfTicket | orderBy : 'createdAt'"> 
+      <th scope="row">{{row.id}}</th> 
+      <td>{{row.desprtion}}</td>
+       <td>
+
+<select ng-model=row.status ng-disabled=" !row.assignTO.id "  ng-change="upDateStatus(row)">
+<option value="new" >new</option>
+<option value="open" >open</option>
+<option value="close" >close</option>
+</select> 
+
+       </td> 
+       <td>
+
+
+
+<select ng-model="row.assignTO.id"  ng-options="user.id as user.name for user in listOfUser" ng-disabled="row.status=='close'" ng-change="upDateAssign(row)">
+ <option value="">-- unassign --</option>
+<!-- <option ng-repeat="user in listOfUser" value={{user.id}} >{{user.name}}</option> -->
+</select> 
+
+
+       </td> 
+ 
+       <td>
+       {{ row.createdAt | date : "dd-MMM-yy: hh:mm a" }}
+     
+
+       </td>
+
+
+       <td>
+         <a href="#" ng-click="openTicket(row,'#viewTicket')">view</a>
+       </td>
+       </tr> 
+      </tbody>
+       </table>
+    </div>
+    <div class="col-sm-2 sidenav">
+     
+    </div>
+  </div>
+</div>
+
+<footer class="container-fluid text-center">
+  <p>Footer Text</p>
+</footer>
+
+
+<!-- Modal -->
+<div class="modal fade" id="createTicket" tabindex="-1" role="dialog" aria-labelledby="createTicket">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">create Ticket</h4>
+      </div>
+      <div class="modal-body">
+     
+
+
+<form class="form-horizontal">
+  <div class="form-group">
+    <label for="inputEmail3" class="col-sm-2 control-label">Email</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" ng-model="newTicket.email" placeholder="Email">
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="inputPassword3" class="col-sm-2 control-label"> Name</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control"  ng-model="newTicket.name" placeholder="Name">
+    </div>
+  </div>
+  
+<div class="form-group">
+    <label for="inputPassword3" class="col-sm-2 control-label">desc</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control"  ng-model="newTicket.desprtion" placeholder="Name">
+    </div>
+  </div>
+
+
+<div class="form-group">
+    <label for="inputPassword3" class="col-sm-2 control-label">AssignTO</label>
+    <div class="col-sm-10">
+      <select ng-model=newTicket.assignTO ng-options="user.id as user.name for user in listOfUser" >
+      <option value="">-- unassign --</option>
+<!-- <option ng-repeat="user in listOfUser" value={{user.id}} >{{user.name}}</option> -->
+</select>
+    </div>
+  </div>
+<div class="form-group">
+    <label for="inputPassword3" class="col-sm-2 control-label"> Status</label>
+    <div class="col-sm-10">
+      <label>{{newTicket.status}}</label>
+    </div>
+  </div>
+</form>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" ng-click="createNewTicket(newTicket,'#createTicket')">Create Ticket</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<!-- Modal -->
+<div class="modal fade" id="createUser" tabindex="-1" role="dialog" aria-labelledby="createTicket">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">create User</h4>
+      </div>
+      <div class="modal-body">
+     
+
+
+<form class="form-horizontal">
+  
+  <div class="form-group">
+    <label for="inputPassword3" class="col-sm-2 control-label">Customer Name</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control"  ng-model="user.name" placeholder="Name">
+    </div>
+  </div>
+ 
+</form>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" ng-click="createUser(user,'#createUser')">Create User</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Modal -->
+<div class="modal fade" id="viewTicket" tabindex="-1" role="dialog" aria-labelledby="viewTicket">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Ticket Id {{selectedtic.id}} 
+
+        <span class="label" ng-class="selectedtic.status=='open'?'label-primary':(selectedtic.status=='new'?'label-success':'label-warning')">{{selectedtic.status}}</span>
+
+        </h4>
+      </div>
+      <div class="modal-body">
+     
+<table class="table table-bordered table-striped bs-events-table"> 
+
+ <tbody> 
+ <tr> <td>Customer Name</td> <td>{{selectedtic.customer.name}}</td> </tr>
+<tr><td>Customer email</td> <td>{{selectedtic.customer.email}}</td> </tr>
+<tr><td>craeted At</td> <td>  {{ selectedtic.createdAt | date : "dd-MMM-yy: hh:mm a" }}</td> </tr>
+<tr><td>Current Assign to</td><td>
+
+
+<select ng-model="selectedtic.assignTO.id"  ng-disabled="selectedtic.status=='close'" ng-options="user.id as user.name for user in listOfUser">
+ <option value="">-- unassign --</option>
+
+</select>  
+
+
+</td>
+ </tbody> 
+ </table>
+
+
+<label>Desc</label>
+
+<div>
+  
+{{selectedtic.desprtion}}
+
+</div>
+
+<label>Comments</label>
+
+<div ng-repeat="comment in selectedtic.comments">
+  
+{{comment.id +comment.comment}}
+
+</div>
+
+<textarea ng-model="selectedtic.newComment"></textarea>
+<button ng-click="addComment(selectedtic)">add comment</button>
+
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+</body>
+</html>
+
